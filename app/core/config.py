@@ -9,6 +9,7 @@ class Setting(BaseSettings):
     DB_NAME: str
     SECRET_KEY: str
     ALGORITHM: str
+    SALT: str
 
     @property
     def ASYNC_DATABASE_URl(self):

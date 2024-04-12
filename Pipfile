@@ -9,6 +9,9 @@ sqlalchemy = "*"
 alembic = "*"
 psycopg2 = "*"
 asyncpg = "*"
+pydantic-settings = "*"
+jwt = "*"
+pyjwt = "*"
 
 [dev-packages]
 

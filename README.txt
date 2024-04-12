@@ -1,0 +1,1 @@
+tools: Python, FastAPI, SQLAlchemy, PostgreSQL, Alembic, hashlib, jwt
