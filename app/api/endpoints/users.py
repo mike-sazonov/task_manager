@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Annotated
 
 from app.db.database import get_async_session
 from app.api.schemas.user import UserCreate
@@ -22,7 +24,8 @@ async def reg_user(user: UserCreate, session: AsyncSession = Depends(get_async_s
 
 
 @user_router.post("/login")
-async def login_user(user: UserCreate, session: AsyncSession = Depends(get_async_session)):
+async def login_user(user: Annotated[OAuth2PasswordRequestForm, Depends()],
+                     session: AsyncSession = Depends(get_async_session)):
     from_db = await session.execute(select(User).where(User.username == user.username))
     current_user = from_db.scalars().all()
     if current_user and current_user[0].password == hashed_password(user.password):

@@ -1,10 +1,13 @@
 import hashlib
 import jwt
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Depends
 from datetime import datetime, timedelta
 from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy import select
 
 from .config import settings
+from app.db.database import AsyncSession, get_async_session
+from app.db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login/")
 
@@ -41,3 +44,11 @@ def get_jwt_token_by_name(username):
         )
 
 
+def get_user_from_token(token=Depends(oauth2_scheme)) -> str:
+    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM,])
+    return payload.get("sub")
+
+
+async def get_user_from_db(username: str, session: AsyncSession = Depends(get_async_session)):
+    from_db = await session.execute(select(User).where(User.username == username))
+    return from_db.scalars().all()
