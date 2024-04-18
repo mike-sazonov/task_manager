@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from typing import Annotated
 from sqlalchemy import select, update, delete, insert
 
 from app.db.models import Task
 from app.db.database import AsyncSession, get_async_session
 from app.api.schemas.task import NewTask
-from app.core.security import get_user_from_token
+from app.core.security import get_user_from_token, get_user
 
 task_router = APIRouter(
     prefix="/task"
@@ -15,6 +15,12 @@ connected_clients = []
 
 
 async def get_task_list(client, session: AsyncSession = Depends(get_async_session)):
+    """
+    Функция для получения списка всех задач из БД
+    :param client: клиент для отправки (например websocket)
+    :param session: асинхронная сессия
+    :return: в цикле передаем клиенту список задач
+    """
     from_db = await session.execute(select(Task).order_by(-Task.id))
     task_list = from_db.scalars().all()
     for task in task_list:
@@ -40,6 +46,9 @@ async def create_task(
         current_user: Annotated[str, Depends(get_user_from_token)],
         session: AsyncSession = Depends(get_async_session)):
 
+    user = await get_user(current_user, session)
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ошибка права доступа")
     await session.execute(insert(Task), task.model_dump())
     await session.commit()
     for client in connected_clients:
@@ -68,6 +77,9 @@ async def delete_task(
         current_user: Annotated[str, Depends(get_user_from_token)],
         session: AsyncSession = Depends(get_async_session)):
 
+    user = await get_user(current_user, session)
+    if user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Ошибка права доступа")
     await session.execute(delete(Task).where(Task.id == task_id))
     await session.commit()
     for client in connected_clients:
@@ -82,13 +94,13 @@ async def websocket_endpoint(
 
     await websocket.accept()
     await websocket.send_text("Введите ваш JWT-токен")
-    token = await websocket.receive_text()
+    token = await websocket.receive_text()  # ожидаем отправки токена в websocket
     user = get_user_from_token(token)
-    if user is None:
+    if user is None:    # проверяем, получен ли юзер из нагрузки
         await websocket.close(code=1008)
         return
-    connected_clients.append(websocket)
-    await get_task_list(websocket, session)
+    connected_clients.append(websocket)     # добавляем пользователя в websocket, если токен верен
+    await get_task_list(websocket, session)     # передаём пользователю список задач
 
     try:
         while True:

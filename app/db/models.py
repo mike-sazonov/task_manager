@@ -10,6 +10,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     username: Mapped[str]
     password: Mapped[str]
+    role: Mapped[str] = mapped_column(nullable=True)
 
 
 class Task(Base):
