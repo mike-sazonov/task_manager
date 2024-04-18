@@ -13,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login/")
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
-EXP_TIME = timedelta(minutes=15)
+EXP_TIME = timedelta(minutes=30)    # время жизни токена
 
 
 def hashed_password(password: str):

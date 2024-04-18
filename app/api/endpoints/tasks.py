@@ -25,7 +25,7 @@ async def get_task_list(client: WebSocket, session: AsyncSession = Depends(get_a
     task_list = from_db.scalars().all()
     for task in task_list:
         await client.send_text(
-            f"Задача №{task.id}, {task.text}, статус: {('Не выполнена', 'Выполнена')[task.complete]}"
+            str(task)
         )
 
 
@@ -37,7 +37,7 @@ async def get_tasks(
 
     current_task = await session.execute(select(Task).filter(Task.id == task_id))
     task = current_task.scalars().all()[0]
-    return NewTask(text=task.text, complete=task.complete)
+    return str(task)
 
 
 @task_router.post("/")
@@ -59,12 +59,14 @@ async def create_task(
 @task_router.put("/")
 async def update_task(
         task_id: int,
-        task: NewTask,
+        complete: bool,
         current_user: Annotated[str, Depends(get_user_from_token)],
         session: AsyncSession = Depends(get_async_session),
         ):
-    print(task)
-    await session.execute(update(Task).values(task.model_dump()).where(Task.id == task_id))
+    from_db = await session.execute(select(Task).filter(Task.id == task_id))
+    current_task = from_db.scalars().all()[0]
+    current_task.complete = complete
+    session.add(current_task)
     await session.commit()
     for client in connected_clients:
         await client.send_text(f"Пользователь {current_user} обновил задачу № {task_id}")
@@ -105,5 +107,6 @@ async def websocket_endpoint(
     try:
         while True:
             await websocket.receive_text()
+            await get_task_list(websocket, session)
     except WebSocketDisconnect:
         connected_clients.remove(websocket)
