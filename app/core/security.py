@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 
 from .config import settings
-from app.db.database import get_async_session, AsyncSession
+from app.db.database import AsyncSession
 from app.db.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/user/login/")
@@ -16,7 +16,7 @@ ALGORITHM = settings.ALGORITHM
 EXP_TIME = timedelta(minutes=15)
 
 
-def hashed_password(password):
+def hashed_password(password: str):
     hashed = hashlib.md5((password + settings.SALT).encode())
     return hashed.hexdigest()
 
@@ -25,7 +25,7 @@ def create_jwt_token(data: dict):
     return jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def get_jwt_token(username):
+def get_jwt_token(username: str):
     try:
         return {"access_token": create_jwt_token({
             "sub": username,
@@ -49,6 +49,6 @@ def get_user_from_token(token=Depends(oauth2_scheme)) -> str:
     return payload.get("sub")
 
 
-async def get_user(current_user, session):
+async def get_user(current_user: str, session: AsyncSession):
     from_db = await session.execute(select(User).where(User.username == current_user))
     return from_db.scalars().all()[0]

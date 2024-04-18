@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
 from typing import Annotated
-from sqlalchemy import select, update, delete, insert
+from sqlalchemy import select, update, delete, insert, desc
 
 from app.db.models import Task
 from app.db.database import AsyncSession, get_async_session
@@ -11,17 +11,17 @@ task_router = APIRouter(
     prefix="/task"
 )
 
-connected_clients = []
+connected_clients = []  # список клиентов websocket
 
 
-async def get_task_list(client, session: AsyncSession = Depends(get_async_session)):
+async def get_task_list(client: WebSocket, session: AsyncSession = Depends(get_async_session)):
     """
     Функция для получения списка всех задач из БД
-    :param client: клиент для отправки (например websocket)
+    :param client: клиент для отправки (websocket)
     :param session: асинхронная сессия
     :return: в цикле передаем клиенту список задач
     """
-    from_db = await session.execute(select(Task).order_by(-Task.id))
+    from_db = await session.execute(select(Task).order_by(desc(Task.complete), desc(Task.id)))
     task_list = from_db.scalars().all()
     for task in task_list:
         await client.send_text(
@@ -96,7 +96,7 @@ async def websocket_endpoint(
     await websocket.send_text("Введите ваш JWT-токен")
     token = await websocket.receive_text()  # ожидаем отправки токена в websocket
     user = get_user_from_token(token)
-    if user is None:    # проверяем, получен ли юзер из нагрузки
+    if user is None:    # проверяем, получен ли юзер из полезной нагрузки токена
         await websocket.close(code=1008)
         return
     connected_clients.append(websocket)     # добавляем пользователя в websocket, если токен верен
