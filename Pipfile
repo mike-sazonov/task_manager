@@ -12,6 +12,9 @@ asyncpg = "*"
 pydantic-settings = "*"
 jwt = "*"
 pyjwt = "*"
+pytest = "*"
+sqlmodel = "*"
+pytest-asyncio = "*"
 
 [dev-packages]
 
