@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  app:
+    container_name: task_app
+    build: ./
+    depends_on:
+      - db
+    command: bash -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - ./app:/app
+    ports:
+      - 8000:8000
+    restart: always
+    env_file:
+      - docker.env
+
+  db:
+    container_name: task_postgres
+    image: postgres
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
+    expose:
+      - 5432
+    volumes:
+      - .postgres:/var/lib/postgres/data
+    restart: always
