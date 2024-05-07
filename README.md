@@ -24,7 +24,7 @@ Task manager, написанный на FastAPI, который позволяе
 
 ### Запуск проекта локально
 1. Клонируйте проект с помощью команды: <br>
-git clone https://github.com/mike-sazonov/FastAPI_currency_project.git
+git clone https://github.com/mike-sazonov/task_manager.git
 2. Настройте виртуальную среду
 3. В корне проекта создайте файл .env и заполните своими данными по примеру:<br><br>
 DB_HOST=localhost<br>
